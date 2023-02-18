@@ -46,7 +46,7 @@ class Video:
     def Save(self):
         for D in self.Points:
             x, y, Color = D.Get(self.t)
-            x, y = round((x-self.XMin)*(self.XDiff),0), round((y-self.YMin)*(self.YDiff),0)
+                
             self.Draw.point((x,y), Color)
         print(self.t/self.step)
         self.Image.save(f'images/{int(round(self.t/self.step, 0))}.png', 'PNG')
