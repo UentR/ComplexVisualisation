@@ -1,11 +1,13 @@
 import numpy as np
 from PIL import Image, ImageDraw
+import cv2
 
 class Grid:
-    Width = 4
+    Width = 2
     def __init__(self, f, Res:np.ushort=np.ushort(4000), Square:np.ushort=np.ushort(2), CenterX:np.short=np.short(0), CenterY:np.short=np.short(0), Radius:np.ushort=np.ushort(10)) -> None:
-        self.Image = Image.new('RGB', (Res, Res), color='black')
-        self.Draw = ImageDraw.Draw(self.Image)
+        self.Out = cv2.VideoWriter('OutputVideo.avi', cv2.VideoWriter_fourcc(*'DIVX'), 60, (Res, Res))
+        
+        self.ImageNp = np.ones((Res+1, Res+1, 3), dtype=np.ubyte)
         
         self.Res = Res+1
         self.Lines = np.ndarray([2*Radius//Square+1, 2], dtype=np.object_)
@@ -25,17 +27,16 @@ class Grid:
         for V, H in self.Lines:
             for i in range(self.Res):
                 Coords1, Coords2 = V(i, t), H(i, t)
-                x, y = np.round((np.real(Coords1)-self.MinX)*(self.XRadius),0), np.round((np.imag(Coords1)-self.MinY)*(self.YRadius),0)
-                self.Draw.rectangle((x-self.Width, y-self.Width, x+self.Width, y+self.Width),(0, 255, 0))
-                x, y = np.round((np.real(Coords2)-self.MinX)*(self.XRadius),0), np.round((np.imag(Coords2)-self.MinY)*(self.YRadius),0)
-                self.Draw.rectangle((x-self.Width, y-self.Width, x+self.Width, y+self.Width), (0, 255, 0))
-        Coords1 = np.csingle(0+0j)
-        x, y = np.round((np.real(Coords1)-self.MinX)*(self.XRadius),0), np.round((np.imag(Coords1)-self.MinY)*(self.YRadius),0)
-        self.Draw.rectangle((x-self.Width, y-self.Width, x+self.Width, y+self.Width),(255, 255, 255))
-        self.Image.save(f'images2/{int(t*Nbr)}.png', 'PNG')
-        self.Image.close()
-        self.Image = Image.new('RGB', (self.Res-1, self.Res-1), color='black')
-        self.Draw = ImageDraw.Draw(self.Image)
+                y, x = np.round((np.real(Coords1)-self.MinX)*(self.XRadius),0), np.round((np.imag(Coords1)-self.MinY)*(self.YRadius),0)
+                if 0 < x <= self.Res and 0 <= y < self.Res:
+                    self.ImageNp[self.Res-int(x)][int(y)] = (0,86,137)
+                    
+                y, x = np.round((np.real(Coords2)-self.MinX)*(self.XRadius),0), np.round((np.imag(Coords2)-self.MinY)*(self.YRadius),0)
+                if 0 < x <= self.Res and 0 <= y < self.Res:
+                    self.ImageNp[self.Res-int(x)][int(y)] = (255,137,93)
+        self.Out.write(self.ImageNp)
+        self.ImageNp = np.ones((self.Res, self.Res, 3), dtype=np.ubyte)
+        
 
 
 class Line:
@@ -60,11 +61,14 @@ class Line:
         return f'{self.Points[0][0]}, {self.Points[-1][0]}'
 
 def func(Coords:np.csingle):
-    return np.round(Coords**2, 5)
+    # return Coords*1j + 1 + 1j
+    return np.round(Coords**2j + 9j - Coords**2, 5)
 
 
-U = Grid(func, 1000)
+U = Grid(func, 500)
 
-Nbr = 100
+Nbr = 300
 for i in range(Nbr+1):
     U.Save(i/Nbr)
+    print(i)
+U.Out.release()
